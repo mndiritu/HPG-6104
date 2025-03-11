@@ -1,7 +1,7 @@
 # Script hpg6104_con_eff_mod.R  -----------------------------------------
 
 # Load necessary libraries
-
+sourceDir(RSCRIPTS)
 if (!require("dplyr"))
   install.packages("dplyr")
 library(dplyr)
