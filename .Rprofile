@@ -1,3 +1,4 @@
+source("renv/activate.R")
 # Project .Rprofile
 
 cat("🚀 Loading project .Rprofile for", basename(getwd()), "\n")
