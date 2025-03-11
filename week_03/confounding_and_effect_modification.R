@@ -1,21 +1,37 @@
-# Script hpg6104_con_eff_mod.R  -----------------------------------------
+# confounding_and_effect_modification.R
+# ==========================================================
+#
+# Analysis of Confounding and Effect Modification
+#
+# This script generates synthetic data and demonstrates how to:
+#   - Identify confounding
+#   - Assess for effect modification
+#   - Adjust for confounders using stratification and regression
+#
 
-# Load necessary libraries
+# ----------------------------------------------------------
+# Load Necessary Libraries and Scripts
+# ----------------------------------------------------------
+
+# Load custom scripts (assuming RSCRIPTS is defined elsewhere)
 sourceDir(RSCRIPTS)
+
+# Load dplyr for data manipulation
 if (!require("dplyr"))
   install.packages("dplyr")
 library(dplyr)
-# Set seed for reproducibility
-set.seed(123)
-
-# Generate synthetic dataset ----------------------------------------------
 
 # Set seed for reproducibility
 set.seed(123)
 
-# Generate synthetic dataset
+
+# ----------------------------------------------------------
+# Generate Synthetic Dataset
+# ----------------------------------------------------------
+
 n <- 500  # Sample size
 
+# Create data frame with predictors
 data <- data.frame(
   Smoking = rbinom(n, 1, 0.4),
   # 40% Smokers
@@ -25,12 +41,13 @@ data <- data.frame(
     c("Young", "Old"),
     n,
     replace = TRUE,
-    prob = c(0.5, 0.5)
-  )  # 50/50 split
+    prob = c(0.5, 0.5)                        # 50/50 split
+  )
 )
 
-# Define lung cancer risk based on Smoking and Occupational Exposure
+# Define Lung Cancer risk based on Smoking and Occupational Exposure
 data$Lung_Cancer <- NA
+
 for (i in 1:nrow(data)) {
   if (data$Smoking[i] == 1 & data$Occupational_Exposure[i] == 1) {
     data$Lung_Cancer[i] <- rbinom(1, 1, 0.6)
@@ -43,104 +60,113 @@ for (i in 1:nrow(data)) {
   }
 }
 
-# Preview the data
+# Preview the dataset
 head(data)
 
-# Export if needed
+# Optional: Export the dataset
 # write.csv(data, "Smoking_LungCancer_Dataset.csv", row.names = FALSE)
 
 
-# Identifying Confounding -------------------------------------------------
+# ----------------------------------------------------------
+# Identifying Confounding
+# ----------------------------------------------------------
 
-# Load necessary library
+# Load epiR for epidemiological analysis
 if (!require("epiR"))
   install.packages("epiR")
 library(epiR)
 
-# Create a 2x2 table for Smoking (X) and Lung Cancer (Y)
+# Create a 2x2 table: Smoking (Exposure) vs Lung Cancer (Outcome)
 table_crude <- table(data$Smoking, data$Lung_Cancer)
 print(table_crude)
 
-# Compute the crude odds ratio (unadjusted)
+# Compute crude odds ratio (unadjusted)
 crude_or <- epi.2by2(table_crude)
 print(crude_or)
 
-# Compute the Adjusted Odds Ratio (Adjusted for Confounder)
 # Logistic regression adjusting for Occupational Exposure (Confounder)
 model_adj <- glm(Lung_Cancer ~ Smoking + Occupational_Exposure,
                  data = data,
                  family = binomial)
+
+# Regression summary
 summary(model_adj)
 
-# Extract odds ratio and confidence intervals
+# Extract adjusted odds ratios and 95% confidence intervals
 exp(cbind(OR = coef(model_adj), confint(model_adj)))
 
 
-# Stratified Analysis (Checking for Effect Modification)  --------
+# ----------------------------------------------------------
+# Stratified Analysis (Assessing Effect Modification)
+# ----------------------------------------------------------
 
-
-# Stratify by Age Group and compute separate ORs
+# Stratify by Age Group and compute separate odds ratios
 young_data <- subset(data, Age_Group == "Young")
-old_data <- subset(data, Age_Group == "Old")
+old_data   <- subset(data, Age_Group == "Old")
 
-# Compute odds ratio for young group
+# Odds ratio for Young Age Group
 table_young <- table(young_data$Smoking, young_data$Lung_Cancer)
 young_or <- epi.2by2(table_young)
 print(young_or)
 
-# Compute odds ratio for old group
+# Odds ratio for Old Age Group
 table_old <- table(old_data$Smoking, old_data$Lung_Cancer)
 old_or <- epi.2by2(table_old)
 print(old_or)
 
-# Testing for Confounding vs. Effect Modification -------------------------
 
-# Step 1: Fit a Logistic Regression Model Without Interaction 
-# (Checking for Confounding)
+# ----------------------------------------------------------
+# Testing for Confounding vs. Effect Modification
+# ----------------------------------------------------------
 
-# Logistic regression adjusting for occupational exposure (Confounder)
+## Step 1: Logistic Regression WITHOUT Interaction (Confounding)
 model_adj <- glm(Lung_Cancer ~ Smoking + Occupational_Exposure,
                  data = data,
                  family = binomial)
-summary(model_adj)
 
-# Extract odds ratios and confidence intervals
+summary(model_adj)
 exp(cbind(OR = coef(model_adj), confint(model_adj)))
 
-# Step 2: Fit a Logistic Regression Model With an Interaction Term (Checking for Effect Modification)
-# Logistic regression with interaction term for Smoking & Age Group
+
+## Step 2: Logistic Regression WITH Interaction (Effect Modification)
 model_interaction <- glm(Lung_Cancer ~ Smoking * Age_Group,
                          data = data,
                          family = binomial)
-summary(model_interaction)
 
-# Extract odds ratios
+summary(model_interaction)
 exp(cbind(OR = coef(model_interaction), confint(model_interaction)))
 
 
-# Controlling for Confounding ---------------------------------------------
+# ----------------------------------------------------------
+# Controlling for Confounding
+# ----------------------------------------------------------
 
-# Step 1: Stratification (Manually Adjusting for Confounding)
+## Step 1: Stratification (Manual Control for Confounding)
+
 # Stratify by Occupational Exposure and compute separate ORs
 high_exposure <- subset(data, Occupational_Exposure == 1)
-low_exposure <- subset(data, Occupational_Exposure == 0)
+low_exposure  <- subset(data, Occupational_Exposure == 0)
 
-# Compute odds ratio for high occupational exposure group
+# Odds ratio for High Occupational Exposure group
 table_high <- table(high_exposure$Smoking, high_exposure$Lung_Cancer)
 high_or <- epi.2by2(table_high)
 print(high_or)
 
-# Compute odds ratio for low occupational exposure group
+# Odds ratio for Low Occupational Exposure group
 table_low <- table(low_exposure$Smoking, low_exposure$Lung_Cancer)
 low_or <- epi.2by2(table_low)
 print(low_or)
 
-#Step 2: Adjusting for Confounding Using Logistic Regression
-# Logistic regression adjusting for confounder
-model_adj <- glm(Lung_Cancer ~ Smoking + Occupational_Exposure, data = data, family = binomial)
-summary(model_adj)
 
-# Extract odds ratios and confidence intervals
+## Step 2: Logistic Regression (Adjusting for Confounding)
+model_adj <- glm(Lung_Cancer ~ Smoking + Occupational_Exposure,
+                 data = data,
+                 family = binomial)
+
+summary(model_adj)
 exp(cbind(OR = coef(model_adj), confint(model_adj)))
 
 
+# ----------------------------------------------------------
+# End of Script
+# ----------------------------------------------------------
