@@ -1,0 +1,14 @@
+# R
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# renv (keep lock file, ignore local library)
+renv/library/
+renv/python/
+renv/staging/
+
+# Other
+.DS_Store
+Thumbs.db
