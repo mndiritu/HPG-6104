@@ -57,6 +57,7 @@ data$pscore <- predict(ps_model, type = "response")
 # Examine PS distribution
 hist(data$pscore, main = "Propensity Score Distribution", xlab = "Propensity Score")
 
+
 # ==============================================================================
 # STEP 4: Calculate IPT Weights
 # ==============================================================================
