@@ -105,10 +105,11 @@ forestplot(
 # STEP 6: Homogeneity Assessment Interpretation
 # ==============================================================================
 
-# Breslow-Day test p-value for homogeneity
-homogeneity_p <- mh_result$massoc$homog[1]  # Access homogeneity p-value
+# Extract the Breslow-Day test p-value for homogeneity
+homogeneity_p <- mh_result$massoc.detail$wOR.homog$p.value  # Correct access to p-value
 cat("\nBreslow-Day Test for Homogeneity p-value:", homogeneity_p, "\n")
 
+# Interpret the p-value
 if (homogeneity_p > 0.05) {
   cat("✅ No significant heterogeneity detected. Mantel-Haenszel summary OR is appropriate.\n")
 } else {
