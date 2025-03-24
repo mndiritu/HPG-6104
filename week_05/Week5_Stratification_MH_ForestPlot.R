@@ -12,8 +12,14 @@
 # install.packages("epiR")
 # install.packages("forestplot")
 
-library(epiR)        # For epidemiologic analyses
-library(forestplot)  # For plotting forest plots
+if (!require("epiR"))
+  install.packages("epiR")
+library(epiR) # For epidemiologic analyses
+
+if (!require("forestplot"))
+  install.packages("forestplot")
+library(forestplot) # For plotting forest plots
+ 
 
 # ==============================================================================
 # STEP 2: Create 2x2 Tables Stratified by Confounder (Age Group)
@@ -32,8 +38,7 @@ tables <- list(age_under50, age_50plus)
 
 mh_result <- epi.2by2(
   dat = tables,
-  method = "cohort.count",      # Since we are dealing with counts
-  homogeneity = "breslow.day"   # Perform Breslow-Day test for homogeneity
+  method = "cohort.count"      # Since we are dealing with counts
 )
 
 # Output summary results
