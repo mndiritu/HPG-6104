@@ -9,28 +9,39 @@
 # ==============================================================================
 
 # Install epiR and forestplot if not already installed
-# install.packages("epiR")
-# install.packages("forestplot")
+if (!require("epiR")) install.packages("epiR")
+if (!require("forestplot")) install.packages("forestplot")
 
-if (!require("epiR"))
-  install.packages("epiR")
-library(epiR) # For epidemiologic analyses
-
-if (!require("forestplot"))
-  install.packages("forestplot")
+library(epiR)       # For epidemiologic analyses
 library(forestplot) # For plotting forest plots
- 
 
 # ==============================================================================
 # STEP 2: Create 2x2 Tables Stratified by Confounder (Age Group)
 # ==============================================================================
 
 # Define the strata tables
-age_under50 <- matrix(c(30, 20, 10, 40), nrow = 2, byrow = TRUE)
-age_50plus  <- matrix(c(50, 30, 20, 50), nrow = 2, byrow = TRUE)
+age_under50 <- matrix(
+  c(30, 20,   # Smokers (Exposed): Cases, Controls
+    10, 40),  # Non-Smokers (Unexposed): Cases, Controls
+  nrow = 2, byrow = TRUE
+)
 
-# Combine strata into a list
-tables <- list(age_under50, age_50plus)
+age_50plus <- matrix(
+  c(50, 30,   # Smokers (Exposed): Cases, Controls
+    20, 50),  # Non-Smokers (Unexposed): Cases, Controls
+  nrow = 2, byrow = TRUE
+)
+
+# Combine both strata into a 3D array
+tables <- array(
+  c(age_under50, age_50plus),  # Combine matrix data
+  dim = c(2, 2, 2),            # Dimensions: 2x2x2 (2 strata)
+  dimnames = list(
+    Outcome = c("Case", "Control"),
+    Exposure = c("Smoker", "Non-Smoker"),
+    Stratum = c("Age <50", "Age ≥50")
+  )
+)
 
 # ==============================================================================
 # STEP 3: Mantel-Haenszel Stratified Analysis
@@ -48,34 +59,35 @@ print(mh_result)
 # STEP 4: Extract Odds Ratios and Confidence Intervals for Forest Plot
 # ==============================================================================
 
-# Retrieve stratum-specific ORs
-or_stratum1 <- mh_result$stratum$`age_under50`$OR.strata.wald
-or_stratum2 <- mh_result$stratum$`age_50plus`$OR.strata.wald
+# Extract stratum-specific ORs and Mantel-Haenszel summary OR
+stratum_or <- mh_result$massoc.detail$OR.strata.wald$est
+stratum_ci_lower <- mh_result$massoc.detail$OR.strata.wald$lower
+stratum_ci_upper <- mh_result$massoc.detail$OR.strata.wald$upper
 
-# Retrieve the Mantel-Haenszel combined OR
-or_mh <- mh_result$massoc$OR.mh.wald
+# Extract Mantel-Haenszel summary OR and CI
+mh_or <- mh_result$massoc.detail$OR.mh.wald$est
+mh_ci_lower <- mh_result$massoc.detail$OR.mh.wald$lower
+mh_ci_upper <- mh_result$massoc.detail$OR.mh.wald$upper
 
-# Create labels for the strata and overall
-labels <- c("Stratum: Age < 50", "Stratum: Age ≥ 50", "Mantel-Haenszel Summary")
-
-# Compile ORs and 95% CIs into a matrix
+# Combine results into a matrix for the forest plot
+labels <- c("Age < 50", "Age ≥ 50", "Mantel-Haenszel Summary")
 or_values <- rbind(
-  c(or_stratum1[1], or_stratum1[2], or_stratum1[3]),  # Stratum 1
-  c(or_stratum2[1], or_stratum2[2], or_stratum2[3]),  # Stratum 2
-  c(or_mh[1], or_mh[2], or_mh[3])                     # Mantel-Haenszel
+  c(stratum_or[1], stratum_ci_lower[1], stratum_ci_upper[1]),
+  c(stratum_or[2], stratum_ci_lower[2], stratum_ci_upper[2]),
+  c(mh_or, mh_ci_lower, mh_ci_upper)
 )
 
 # ==============================================================================
 # STEP 5: Create and Display Forest Plot
 # ==============================================================================
 
-# Combine labels and ORs for forest plot table
+# Prepare text for forest plot
 tabletext <- cbind(
   labels,
   sprintf("%.2f (%.2f - %.2f)", or_values[, 1], or_values[, 2], or_values[, 3])
 )
 
-# Plot
+# Generate forest plot
 forestplot(
   labeltext = tabletext,
   mean = or_values[, 1],
@@ -84,7 +96,7 @@ forestplot(
   zero = 1,                     # Reference line at OR = 1
   boxsize = 0.1,
   lineheight = unit(10, "mm"),
-  col = forestplot::fpColors(box = "blue", lines = "black", zero = "red"),
+  col = fpColors(box = "blue", lines = "black", zero = "red"),
   xlab = "Odds Ratio (95% CI)",
   title = "Forest Plot of Odds Ratios by Age Group\nand Mantel-Haenszel Summary"
 )
@@ -94,7 +106,7 @@ forestplot(
 # ==============================================================================
 
 # Breslow-Day test p-value for homogeneity
-homogeneity_p <- mh_result$homogeneity$`breslow.day`$p.value
+homogeneity_p <- mh_result$massoc$homog[1]  # Access homogeneity p-value
 cat("\nBreslow-Day Test for Homogeneity p-value:", homogeneity_p, "\n")
 
 if (homogeneity_p > 0.05) {
