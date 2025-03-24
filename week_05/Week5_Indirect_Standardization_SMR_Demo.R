@@ -1,61 +1,64 @@
 ################################################################################
 # HPG 6104 - Epidemiologic Methods II
 # Week 5 Lecture: Advanced Confounding Control Measures
-# Practical Example in R: Direct Standardization
+# Practical Example in R: Indirect Standardization (SMR Calculation)
 ################################################################################
 
 # ==============================================================================
-# STEP 1: Create Data for Study and Standard Populations
+# STEP 1: Define the Data
 # ==============================================================================
 
-# Define age groups
+# Age groups
 age_groups <- c("0-19", "20-39", "40-59", "60+")
-
-# Study Population - Age-specific Mortality Rates (per 1,000 people)
-study_rates <- c(2, 5, 15, 50)
 
 # Study Population - Age Group Sizes
 study_pop <- c(5000, 7000, 4000, 3000)
 
-# Standard Population - Age Group Sizes (the reference)
-standard_pop <- c(6000, 6000, 4000, 4000)
+# Standard Population - Age-specific Mortality Rates (per 1,000 population)
+standard_rates <- c(1.5, 4.0, 12.0, 40.0)
+
+# Observed deaths in the study population (actual data collected)
+observed_deaths <- c(8, 25, 50, 150)
 
 # ==============================================================================
-# STEP 2: Calculate Expected Deaths in the Standard Population
+# STEP 2: Calculate Expected Deaths Using Standard Rates
 # ==============================================================================
 
-# Expected deaths = Study rates (per 1,000) * Standard population / 1,000
-expected_deaths <- study_rates * standard_pop / 1000
+# Expected deaths = Standard rates * Study population / 1,000
+expected_deaths <- standard_rates * study_pop / 1000
 
 # ==============================================================================
-# STEP 3: Calculate Age-Adjusted Rate
+# STEP 3: Compute SMR (Standardized Mortality Ratio)
 # ==============================================================================
 
-# Age-adjusted rate = Sum of expected deaths / Total standard population * 1,000
-total_expected_deaths <- sum(expected_deaths)
-total_standard_pop <- sum(standard_pop)
+# Total observed deaths
+total_observed <- sum(observed_deaths)
 
-adjusted_rate <- (total_expected_deaths / total_standard_pop) * 1000
+# Total expected deaths
+total_expected <- sum(expected_deaths)
+
+# SMR = Observed / Expected
+SMR <- total_observed / total_expected
 
 # ==============================================================================
 # STEP 4: Output the Results
 # ==============================================================================
 
-# Create a summary table for clarity
-standardization_table <- data.frame(
+# Create a summary table
+indirect_standardization_table <- data.frame(
   Age_Group = age_groups,
-  Study_Rate_per1000 = study_rates,
-  Standard_Pop = standard_pop,
-  Expected_Deaths = expected_deaths
+  Study_Pop = study_pop,
+  Standard_Rate_per1000 = standard_rates,
+  Observed_Deaths = observed_deaths,
+  Expected_Deaths = round(expected_deaths, 2)
 )
 
-# Print the table and the adjusted rate
-print("Direct Standardization Summary Table")
-print(standardization_table)
+# Print the table and SMR
+print("Indirect Standardization (SMR) Summary Table")
+print(indirect_standardization_table)
 
-cat("\nAge-Adjusted Mortality Rate (per 1,000 population):", round(adjusted_rate, 2), "\n")
+cat("\nStandardized Mortality Ratio (SMR):", round(SMR, 2), "\n")
 
 ################################################################################
 # END OF SCRIPT
 ################################################################################
-
